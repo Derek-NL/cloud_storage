@@ -11,7 +11,7 @@
             @foreach ($files as $file)
                 <li class="py-2 border-b flex justify-between items-center">
                     <span>{{ $file->filename }}</span>
-                        <a href="{{ route('files.download', $file->id) }}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200">Download</a>
+                    <a href="{{ route('files.shared.download', $file->id) }}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200">Download</a>
                 </li>
             @endforeach
         </ul>

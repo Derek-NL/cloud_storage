@@ -2,13 +2,13 @@
     <x-slot name="header">
         <h2 class="font-semibold text-2xl text-gray-800 leading-tight">
             {{ __('Home') }}
-        </h2>
+        </h2>   
     </x-slot>
 
     <div class="max-w-3xl mx-auto p-6 mt-6 bg-white rounded-lg shadow-lg">
 
         @if ($errors->any())
-            <div class="bg-red-500 text-white p-4 rounded mb-4">
+            <div class="bg-red-500 text-white p-4 rounded mb-4">        
                 <ul>
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -72,8 +72,6 @@
 
     <script>
         function openShareModal(fileId) {
-            // Set the action URL for the share form
-            document.getElementById('shareForm').action = "{{ url('files/share') }}" + "/" + fileId; // Correcte URL
             // Open de modal
             document.getElementById('shareModal').classList.remove('hidden');
         }

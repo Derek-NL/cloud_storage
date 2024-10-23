@@ -8,64 +8,53 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-
 class FileController extends Controller
 {
     public function index()
     {
+        // Verkrijg bestanden die door de ingelogde gebruiker zijn geüpload
         $files = File::where('user_id', auth()->id())->get();
-        return view('dashboard', compact('files')); // Zorg ervoor dat de view hier goed is
+        return view('dashboard', compact('files'));
     }
 
     public function store(Request $request)
     {
+        // Validatie van het geüploade bestand
         $request->validate([
             'file' => 'required|file|max:2048', // Maximaal 2MB
         ]);
 
-        // Gebruik de public schijf om bestanden op te slaan
-        $path = $request->file('file')->store('files', 'public'); // Zorg ervoor dat je de 'public' schijf gebruikt
+        // Bestand opslaan op de public schijf
+        $path = $request->file('file')->store('files', 'public');
 
-        // Controleer of het bestand succesvol is opgeslagen
-        if ($path) {
-            // Maak een nieuw bestand aan in de database
-            File::create([
-                'user_id' => auth()->id(),
-                         'filename' => $request->file('file')->getClientOriginalName(),
-                         'path' => $path,
-            ]);
-            return back()->with('success', 'Bestand geüpload!');
-        } else {
-            return back()->withErrors(['file' => 'Bestand kon niet worden opgeslagen.']);
-        }
+        // Bestandsrecord aanmaken in de database
+        File::create([
+            'user_id' => auth()->id(),
+                     'filename' => $request->file('file')->getClientOriginalName(),
+                     'path' => $path,
+        ]);
+
+        return back()->with('success', 'Bestand geüpload!');
     }
-
 
     public function download($id)
     {
         $file = File::findOrFail($id);
 
-        // Debug: controleer het pad van het bestand
-        $filePath = storage_path('app/public/' . $file->path); // Zorg ervoor dat je het juiste pad gebruikt
-        if (!file_exists($filePath)) {
-            return abort(404, 'File not found.');
-        }
-
-        // Zorg ervoor dat de gebruiker de eigenaar van het bestand is
+        // Controleer of de gebruiker de eigenaar is van het bestand
         if ($file->user_id !== auth()->id()) {
             return abort(403, 'Unauthorized action.');
         }
 
-        return response()->download($filePath);
-    }
-
+        // Download het bestand
+        return Storage::disk('public')->download($file->path, $file->filename);
+    }   
 
     public function destroy($id)
     {
-        // Zoek het bestand op basis van het ID
         $file = File::findOrFail($id);
 
-        // Controleer of de ingelogde gebruiker de eigenaar is van het bestand
+        // Controleer of de ingelogde gebruiker de eigenaar is
         if ($file->user_id !== auth()->id()) {
             return abort(403, 'Unauthorized action.');
         }
@@ -73,19 +62,10 @@ class FileController extends Controller
         // Verwijder het bestand uit de database
         $file->delete();
 
-        // Optioneel: Verwijder het bestand uit de opslag
-        $storagePath = storage_path('app/public/' . $file->path); // Correct pad opbouwen
+        // Verwijder het bestand uit de opslag
+        Storage::disk('public')->delete($file->path);
 
-        // Debugging: Controleer of het bestand bestaat voordat je het verwijdert
-        if (file_exists($storagePath)) {
-            if (unlink($storagePath)) {
-                return back()->with('success', 'Bestand verwijderd!');
-            } else {
-                return back()->withErrors(['error' => 'Kon het bestand niet verwijderen.']);
-            }
-        } else {
-            return back()->withErrors(['error' => 'Bestand bestaat niet in de opslag.']);
-        }
+        return back()->with('success', 'Bestand verwijderd!');
     }
 
     public function share(Request $request, $fileId)
@@ -98,7 +78,6 @@ class FileController extends Controller
         $user = User::where('name', $request->username)->first();
 
         if (!$user) {
-            // Geef een foutmelding terug als de gebruiker niet bestaat
             return back()->withErrors(['username' => 'Gebruiker niet gevonden.']);
         }
 
@@ -109,10 +88,17 @@ class FileController extends Controller
             return back()->withErrors(['file' => 'Bestand niet gevonden.']);
         }
 
+        // Controleer of het bestand al is gedeeld met de gebruiker
+        $exists = \DB::table('shared_files')->where('file_id', $file->id)->where('user_id', $user->id)->exists();
+
+        if ($exists) {
+            return back()->withErrors(['error' => 'Bestand is al gedeeld met deze gebruiker.']);
+        }
+
         // Deel het bestand met de gebruiker
         \DB::table('shared_files')->insert([
             'file_id' => $file->id,
-            'user_id' => $user->id, // Gebruik het ID van de gebruiker
+            'user_id' => $user->id,
             'created_at' => now(),
                                            'updated_at' => now(),
         ]);
@@ -124,7 +110,7 @@ class FileController extends Controller
     {
         // Verkrijg de bestanden die met de huidige gebruiker zijn gedeeld
         $files = \DB::table('shared_files')
-        ->where('shared_files.user_id', auth()->id()) // Specificeer de tabelnaam
+        ->where('shared_files.user_id', auth()->id())
         ->join('files', 'shared_files.file_id', '=', 'files.id')
         ->select('files.*')
         ->get();
@@ -134,8 +120,18 @@ class FileController extends Controller
 
     public function downloadSharedFile($fileId)
     {
+        // Controleer of het bestand gedeeld is met de huidige gebruiker
+        $sharedFile = \DB::table('shared_files')
+        ->where('file_id', $fileId)
+        ->where('user_id', auth()->id())
+        ->first();
+
+        if (!$sharedFile) {
+            return redirect()->back()->withErrors(['error' => 'U hebt geen toegang tot dit bestand.']);
+        }
+
         // Zoek het bestand op basis van het ID
-        $file = \DB::table('files')->where('id', $fileId)->first();
+        $file = File::find($fileId);
 
         if (!$file) {
             return redirect()->back()->withErrors(['error' => 'Bestand niet gevonden.']);
