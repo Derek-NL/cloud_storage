@@ -21,9 +21,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/files/upload', [FileController::class, 'store'])->name('files.upload');
     Route::get('/files/download/{id}', [FileController::class, 'download'])->name('files.download');
     Route::delete('/files/delete/{id}', [FileController::class, 'destroy'])->name('files.delete');
-    Route::post('/files/share/{id}', [FileController::class, 'share'])->name('files.share');
-    Route::get('/files/shared', [FileController::class, 'sharedFiles'])->name('files.shared');
-    Route::get('/files/shared/download/{fileId}', [FileController::class, 'downloadSharedFile'])->name('files.shared.download');
+    Route::post('/share', [FileController::class, 'share'])->name('files.share');
+    Route::get('/shared-with-me', [FileController::class, 'sharedWithMe'])->name('files.shared');
+    Route::get('/shared/download/{id}', [FileController::class, 'downloadSharedFile'])->name('files.shared.download');
+
+
 });
 
 require __DIR__.'/auth.php';

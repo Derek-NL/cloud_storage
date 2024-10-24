@@ -22,9 +22,10 @@ class File extends Model
         return $this->belongsTo(User::class);
     }
 
-    // Relatie met de Share model (voor gedeelde bestanden)
-    public function shares()
+    // Relatie met de SharedFile model (voor gedeelde bestanden)
+    public function sharedFiles()
     {
-        return $this->hasMany(Share::class);
+        return $this->hasMany(SharedFile::class);
     }
 }
+            

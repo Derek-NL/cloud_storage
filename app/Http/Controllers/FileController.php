@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Auth;
 use App\Models\File;
 use App\Models\User;
+use App\Models\SharedFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -67,77 +68,50 @@ class FileController extends Controller
 
         return back()->with('success', 'Bestand verwijderd!');
     }
-
-    public function share(Request $request, $fileId)
+    
+    public function share(Request $request)
     {
+        // Valideer de input
         $request->validate([
-            'username' => 'required|string|max:255',
+            'email' => 'required|email', // Controleer of het een geldig e-mailadres is
+            'file_id' => 'required|exists:files,id', // Zorg ervoor dat het bestand bestaat
         ]);
-
-        // Zoek de gebruiker op basis van de gebruikersnaam
-        $user = User::where('name', $request->username)->first();
-
-        if (!$user) {
-            return back()->withErrors(['username' => 'Gebruiker niet gevonden.']);
-        }
-
-        // Zoek het bestand op basis van het ID
-        $file = File::find($fileId);
-
-        if (!$file) {
-            return back()->withErrors(['file' => 'Bestand niet gevonden.']);
-        }
-
-        // Controleer of het bestand al is gedeeld met de gebruiker
-        $exists = \DB::table('shared_files')->where('file_id', $file->id)->where('user_id', $user->id)->exists();
-
-        if ($exists) {
-            return back()->withErrors(['error' => 'Bestand is al gedeeld met deze gebruiker.']);
-        }
-
-        // Deel het bestand met de gebruiker
-        \DB::table('shared_files')->insert([
+    
+        // Zoek het bestand
+        $file = File::findOrFail($request->input('file_id'));
+    
+        // Deel het bestand met het e-mailadres
+        SharedFile::create([
             'file_id' => $file->id,
-            'user_id' => $user->id,
-            'created_at' => now(),
-                                           'updated_at' => now(),
+            'email' => $request->input('email'), // Gebruik e-mailadres
+            'user_id' => Auth::id(), // ID van de huidige gebruiker
         ]);
-
-        return back()->with('success', 'Bestand succesvol gedeeld met ' . $user->name);
+    
+        return redirect()->back()->with('success', 'Bestand succesvol gedeeld met ' . $request->input('email'));
     }
 
-    public function sharedFiles()
+    public function sharedWithMe()
     {
-        // Verkrijg de bestanden die met de huidige gebruiker zijn gedeeld
-        $files = \DB::table('shared_files')
-        ->where('shared_files.user_id', auth()->id())
-        ->join('files', 'shared_files.file_id', '=', 'files.id')
-        ->select('files.*')
-        ->get();
+        // Verkrijg alle gedeelde bestanden voor de ingelogde gebruiker
+        $sharedFiles = SharedFile::with(['file', 'user']) // Laad de gerelateerde modellen
+            ->where('email', Auth::user()->email) // Filter op het e-mailadres van de ingelogde gebruiker
+            ->get();
 
-        return view('shared_files', compact('files'));
+        return view('shared-files', compact('sharedFiles'));
     }
 
-    public function downloadSharedFile($fileId)
+    public function downloadSharedFile($id)
     {
-        // Controleer of het bestand gedeeld is met de huidige gebruiker
-        $sharedFile = \DB::table('shared_files')
-        ->where('file_id', $fileId)
-        ->where('user_id', auth()->id())
-        ->first();
-
-        if (!$sharedFile) {
-            return redirect()->back()->withErrors(['error' => 'U hebt geen toegang tot dit bestand.']);
+        // Zoek de gedeelde bestand record
+        $sharedFile = SharedFile::with('file')->where('id', $id)->firstOrFail();
+    
+        // Controleer of de gebruiker het bestand heeft ontvangen
+        if ($sharedFile->email !== Auth::user()->email) {
+            return abort(403, 'Unauthorized action.');
         }
-
-        // Zoek het bestand op basis van het ID
-        $file = File::find($fileId);
-
-        if (!$file) {
-            return redirect()->back()->withErrors(['error' => 'Bestand niet gevonden.']);
-        }
-
+    
         // Download het bestand
-        return Storage::disk('public')->download($file->path, $file->filename);
+        return Storage::disk('public')->download($sharedFile->file->path, $sharedFile->file->filename);
     }
+     
 }

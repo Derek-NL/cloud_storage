@@ -27,10 +27,10 @@
             @csrf
             <div class="mb-4">
                 <label for="file" class="block text-gray-700 text-lg font-semibold mb-2">Choose file:</label>
-                <input type="file" name="file" id="file" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                <input type="file" name="file" id="file" class="w-full text-gray-400 font-semibold text-sm bg-white border file:cursor-pointer cursor-pointer file:border-0 file:py-3 file:px-4 file:mr-4 file:bg-gray-100 file:hover:bg-gray-200 file:text-gray-500 rounded">
             </div>
             <div class="text-center">
-                <button type="submit" class="w-full px-4 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-200">
+                <button type="submit" class="w-full px-4 py-2 bg-blue-700 text-white font-bold rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-200">
                     Upload
                 </button>
             </div>
@@ -42,7 +42,7 @@
                 <li class="flex flex-col sm:flex-row justify-between items-center p-4 bg-gray-100 rounded-lg shadow hover:bg-gray-200 transition duration-200">
                     <span class="text-gray-800 mb-2 sm:mb-0">{{ $file->filename }}</span>
                     <div class="flex space-x-2">
-                        <a href="{{ route('files.download', $file->id) }}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200">Download</a>
+                        <a href="{{ route('files.download', $file->id) }}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200">Download</a>
                         <form method="POST" action="{{ route('files.delete', $file->id) }}">
                             @csrf
                             @method('DELETE')
@@ -59,10 +59,11 @@
     <div id="shareModal" class="fixed inset-0 flex items-center justify-center hidden bg-black bg-opacity-50 z-50">
         <div class="bg-white rounded-lg p-6 w-80">
             <h3 class="text-lg font-semibold mb-4">Deel bestand</h3>
-            <form id="shareForm" action="" method="POST">
+            <form id="shareForm" action="{{ route('files.share') }}" method="POST">
                 @csrf
+                <input type="hidden" name="file_id" id="file_id">
                 <div class="flex items-center space-x-2">
-                    <input type="text" name="username" placeholder="Voer gebruikersnaam in" required class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <input type="email" name="email" placeholder="Voer e-mailadres in" required class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Deel</button>
                 </div>
             </form>
@@ -73,6 +74,7 @@
     <script>
         function openShareModal(fileId) {
             // Open de modal
+            document.getElementById('file_id').value = fileId; // Set the file ID in the hidden input
             document.getElementById('shareModal').classList.remove('hidden');
         }
 
