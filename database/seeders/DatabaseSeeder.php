@@ -2,9 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\User;
+use App\Models\File;
+
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,11 +14,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // Roep de UserSeeder aan om 100 gebruikers aan te maken
+        $this->call(UserSeeder::class);
+        $this->call(FileSeeder::class);
+        $this->call(SharedFileSeeder::class);   
     }
 }
+

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\AdminController;        
 use Illuminate\Support\Facades\Route;
 
 // Publieke routes
@@ -21,11 +22,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/files/upload', [FileController::class, 'store'])->name('files.upload');
     Route::get('/files/download/{id}', [FileController::class, 'download'])->name('files.download');
     Route::delete('/files/delete/{id}', [FileController::class, 'destroy'])->name('files.delete');
+
     Route::post('/share', [FileController::class, 'share'])->name('files.share');
     Route::get('/shared-with-me', [FileController::class, 'sharedWithMe'])->name('files.shared');
     Route::get('/shared/download/{id}', [FileController::class, 'downloadSharedFile'])->name('files.shared.download');
 
-
+    Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
 });
 
 require __DIR__.'/auth.php';

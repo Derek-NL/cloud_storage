@@ -18,6 +18,11 @@
                     <x-nav-link :href="route('files.shared')" :active="request()->routeIs('files.shared')">
                         {{ __('Shared Files') }}
                     </x-nav-link>
+                    @if(auth()->check() && auth()->user()->is_admin)
+                        <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
+                            {{ __('Admin Dashboard') }}
+                        </x-nav-link>
+                    @endif
 
                 </div>
             </div>
